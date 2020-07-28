@@ -19,14 +19,26 @@ def extract_indeed_pages():
 
 def extract_indeed_jobs(last_page):
     jobs = []
-    #for page in range(last_page):
-    result = requests.get(f"{URL}&start={0*LIMIT}")
-    soup = BeautifulSoup(result.text, 'html.parser')
-    results = soup.find_all("div",{"class":"jobsearch-SerpJobCard"})
+    for page in range(last_page):
+        print(f"Scrapping page {page}")
+        result = requests.get(f"{URL}&start={page*LIMIT}")
+        soup = BeautifulSoup(result.text, 'html.parser')
+        results = soup.find_all("div",{"class":"jobsearch-SerpJobCard"})
 
-    for result in results:
-        title = result.find("h2", {"class": "title"}).find("a").string
-
-        print(title)
-
+        for result in results:
+            job = extract_job(result)
+            jobs.append(job)
     return jobs
+
+def extract_job(html):
+    title = html.find("h2", {"class": "title"}).find("a")["title"].strip()
+    company = html.find("div", {"class": "sjcl"}).find("span", {"class": "company"}).string
+    if company is None:
+        company = html.find("div", {"class": "sjcl"}).find("span", {"class": "company"}).find("a").string.strip()
+    else:
+        company = company.strip()
+    # attribute 값을 가져올때 find 뒤에 []를 사용
+    location = html.find("div", {"class": "sjcl"}).find("div", {"class": "recJobLoc"})["data-rc-loc"].strip()
+    job_id = html["data-jk"]
+
+    return {"title":title , "company" : company , "location" : location,"link":f"https://kr.indeed.com/viewjob?jk={job_id}"}
